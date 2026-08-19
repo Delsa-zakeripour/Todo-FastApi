@@ -3,7 +3,7 @@ from typing import Annotated
 from sqlalchemy.orm import Session
 from app.models import Users
 from starlette import status
-from app.schema import TodoRequest
+from app.schema import CreateUserRequest
 from app.database import sessionLocal
 
 
@@ -21,6 +21,16 @@ def get_db():
 
 db_dependency = Annotated[Session, Depends(get_db)]
 
-@router.get("/auth/", status_code=status.HTTP_200_OK)
-async def get_users(db: db_dependency):
-    return db.query(Users).all()
+@router.post("/auth")
+async def create_user(create_user_request: CreateUserRequest):
+    create_user_model = Users(
+        email=create_user_request.email,
+        username=create_user_request.username,
+        first_name=create_user_request.first_name,
+        last_name=create_user_request.last_name,
+        role=create_user_request.role,
+        hashed_password=create_user_request. password,
+        is_active=True,
+    )
+
+    return create_user_model
