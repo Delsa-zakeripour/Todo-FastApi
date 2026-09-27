@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends, HTTPException, Path
+from fastapi import APIRouter,Depends, HTTPException, Path, Request
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from jose import JWTError, jwt
@@ -10,6 +10,7 @@ from app.database import sessionLocal
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from fastapi.templating import Jinja2Templates
 
 router = APIRouter(prefix='/auth',tags=['auth'])
 
@@ -34,6 +35,22 @@ def get_db():
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
+
+
+templates = Jinja2Templates(directory='app/templates')
+ 
+
+# pages
+
+@router.get('/login-page')
+def render_login_page(request: Request):
+    return templates.TemplateResponse(request,'login.html')
+
+@router.get('/register-page')
+def render_register_page(request: Request):
+    return templates.TemplateResponse(request,'register.html')
+#endpoints
+
 
 def authentication_user(username: str, password: str, db):
     User = db.query(Users).filter(Users.username == username).first()
@@ -70,6 +87,10 @@ def  get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
 
 @router.post("/")
 async def create_user(db: db_dependency, create_user_request: CreateUserRequest):
+    if db.query(Users).filter(Users.username == create_user_request.username).first():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Username already exists.')
+    if db.query(Users).filter(Users.email == create_user_request.email).first():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail='Email already exists.')
     create_user_model = Users(
         email=create_user_request.email,
         username=create_user_request.username, 

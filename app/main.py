@@ -110,20 +110,32 @@
 
 
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from app import models
 from app.database import engine
 from app.router import auth, todos, admin, users
+from fastapi.templating import Jinja2Templates
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import RedirectResponse
 
 app = FastAPI()
+
+
+models.Base.metadata.create_all(bind=engine)
+
+
+app.mount('/static', StaticFiles(directory='app/static'), name='static')
+
+
+
+@app.get("/")
+def test(request: Request):
+    return RedirectResponse(url='/todo/todo-page', status_code=status.HTTP_302_FOUND)
 
 @app.get("/health")
 def health_check():
     return {'status':'Healthy'}
 
-
-
-models.Base.metadata.create_all(bind=engine)
 
 app.include_router(auth.router)
 app.include_router(todos.router)
